@@ -1,0 +1,1 @@
+/snap/go/9952/misc/wasm/wasm_exec.js

@@ -1,0 +1,77 @@
+import { useEffect, useState } from "preact/hooks";
+import preactLogo from "./assets/preact.svg";
+import "./app.css";
+import { wasmCompute } from "./wasm/compute";
+import { SenderModule } from "./SenderModule";
+
+export function App() {
+  // const [stat, setStat] = useState<"Loading" | "Ready">("Loading");
+  const [comp, setComp] = useState<wasmCompute | null>(null);
+  const [wsInst, setWsInst] = useState<WebSocket | null>(null);
+  const [wsMsg, setWsMsg] = useState<
+    "Error" | "Ready" | "Connecting" | "Died" | "Closed"
+  >("Connecting");
+
+  useEffect(() => {
+    // set wasm
+    const compute = new wasmCompute();
+    compute.init().then(() => {
+      setComp(compute);
+    });
+
+    // websocket
+    setWsInst(new WebSocket("ws:192.168.57.71/ws"));
+  }, []);
+
+  useEffect(() => {
+    if (!wsInst) return;
+
+    wsInst.onopen = function (e) {
+      // alert("[open] Connection established");
+      // alert("Sending to server");
+      setWsMsg("Ready");
+
+      //byte aray
+      // const a = new Uint8Array([0, 255, 0, 0, 1, 0, 255, 0, 2, 0, 0, 255]);
+      // wsInst?.send(a);
+    };
+
+    wsInst.onmessage = function (event) {
+      alert(`[message] Data received from server: ${event.data}`);
+    };
+
+    wsInst.onclose = function (event) {
+      if (event.wasClean) {
+        setWsMsg("Closed");
+      } else {
+        // e.g. server process killed or network down
+        setWsMsg("Died");
+      }
+    };
+
+    wsInst.onerror = function (error) {
+      setWsMsg("Error");
+    };
+  }, [wsInst]);
+
+  if (!comp?.instance) {
+    return (
+      <>
+        <h2>Wasm:</h2>
+        <p class="read-the-docs">{comp?.instance ? "Ready" : "Loading"}</p>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <h2>Wasm:</h2>
+      <p class="read-the-docs">Ready</p>
+      {/* <p class="read-the-docs"> {comp.hash("123").length}</p> */}
+      <h2>Websocket:</h2>
+      <p class="read-the-docs"> {wsMsg}</p>
+
+      {comp?.instance && wsInst?.OPEN && <SenderModule ws={wsInst} wc={comp} />}
+    </>
+  );
+}
