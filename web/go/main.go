@@ -1,69 +1,123 @@
 package main
 
 import (
-	"crypto"
-	_ "crypto/sha512"
-	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	"led-animator/pkg/nodes"
-	"syscall/js"
+	"led-animator/structs"
+	"os"
+	"strings"
+	// "syscall/js"
 )
 
+// jsonStructs FILE! :)
+
+// dataStructs FILE! :)
+
+// nodeStructs FILE! :)))
+
+// this FILE! :)
+
 func main() {
-	done := make(chan struct{}, 0)
+	/* done := make(chan struct{}, 0)
 	js.Global().Set("wasmHash", js.FuncOf(hash))
 	js.Global().Set("wasmWave", js.FuncOf(wave))
-	js.Global().Set("wasmNoise", js.FuncOf(nodes.Noise1Dw))
 	fmt.Println("wasm done")
-	<-done
+	<-done */
+	/* var jsonStr string = `
+	[
+		{
+			"tip": 0,
+			"node": "{
+				"tip": 0,
+				"scalar" : 2,
+				"nextNode" : 66
+			}"
+		},
+		{
+			"tip": 0,
+			"node": "{
+				"tip": 0,
+				"scalar" : 2,
+				"nextNode" : 66
+			}"
+		},
+		{
+			"tip": 0,
+			"node": "{
+				"tip": 0,
+				"scalar" : 2,
+				"nextNode" : 66
+			}"
+		}
+	]` */
+
+	//var tJsonStr string = `[{"tip":0,"node":{"tip":0,"scalar":2,"nextnode":66}}]`
+
+	dat, _ := os.ReadFile("./input.json")
+	fmt.Println(string(dat))
+
+	node_factory(string(dat))
+
 }
 
-func hash(this js.Value, args []js.Value) interface{} {
-	h := crypto.SHA512.New()
-	h.Write([]byte(args[0].String()))
+/* func compute(this js.Value, args []js.Value) interface{} {
 
-	return hex.EncodeToString(h.Sum(nil))
-}
+	return js.Null()
+} */
 
-//   wave(i: number, leds: number, waveSize: number, steps: number): LED[][]
-func wave(this js.Value, args []js.Value) interface{} {
-	i := args[0].Int()
-	numleds := args[1].Int()
+func node_factory(fullJson string) ([]interface{}, error) {
 
-	fmt.Println("wave", i, numleds)
+	// partial json parse (top json layer)
+	var jsons []structs.JSONNode
 
-	// byte aray of 4 * leds * steps
-	// 4 bytes per LED
-	// 1 byte per color
-	// 1 byte per step
-	out := make([]interface{}, numleds*4)
+	//fullJson = strings.ReplaceAll(fullJson, "\n", "")
+	fullJson = strings.Join(strings.Fields(fullJson), " ")
 
-	// fill array with random data
-	for j := 0; j < len(out); j += 4 {
-		index := numleds*4*i + j
+	fmt.Println(fullJson)
+	json.Unmarshal([]byte(fullJson), &jsons)
 
-		// if j%4 == 0 {
-		// 	out[j] = byte(index % 10)
-		// } else {
-		// 	out[j] = byte((index) % 255)
-		// }
-		// out[j-4] = index % numleds
-		// out[j-3] = 0
-		// out[j-2] = 0 //byte(index % 255)
-		// out[j-1] = 0 // byte(index * 17)
+	fmt.Println("jnsons len: ", len(jsons))
+	// save nodes to \"actual\" data
 
-		out[j] = index % 4
-		const r, g, b = rgb2
+	// holds pointers to nodes: *struct.SomethingNode node[N]
+	nodes := make([]interface{}, len(jsons))
 
-		out[j+1] = index % 255
-		out[j+2] = index % 255
-		out[j+3] = index % 255
+	fmt.Println("Entered")
+
+	for i := 0; i < len(jsons); i++ {
+		fmt.Println("i: ", i)
+		fmt.Println("with json node str: ", jsons[i].Node)
+		var err error
+		nodes[i], err = set_get_node(jsons[i].Node, jsons[i].Tip)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
 	}
 
-	// a := fmt.Sprintf("%g", out[:])
-	// a = strings.ReplaceAll(a, " ", "")
-	// // a = strings.ReplaceAll(a, "]", "")
-	// // fmt.Println("goout", a)
-	return out
-	// return string("012ÿ")
+	return nodes, nil
+}
+
+func set_get_node(json_string string, tip int16) (interface{}, error) {
+	fmt.Printf("DEBUG:	created..")
+	switch tip {
+	case 0:
+		node := new(structs.ScalarCreatorNode)
+		fmt.Println("of_json_str: ", json_string)
+		json.Unmarshal([]byte(json_string), node)
+		fmt.Println("DEBUG:	scalar_node:", node.Tip, " ", node.Scalar, " nn", node.Nextnode)
+		return node, nil
+	case 1:
+		node := new(structs.ColorApplyerNode)
+		json.Unmarshal([]byte(json_string), node)
+		fmt.Println("DEBUG:	color_applyer_node: ", node.Color, " ", node.Color.R, " nn", node.Nextnode)
+		return node, nil
+	case 2:
+		node := new(structs.ColorCreatorNode)
+		json.Unmarshal([]byte(json_string), node)
+		fmt.Println("DEBUG:	color_creator_node: ", node.Tip, " (", node.R, ",", node.G, ",", node.B, ")", " nn", node.Nextnode)
+		return node, nil
+	default:
+		return nil, fmt.Errorf("Enga tipa, ki predstaula nek node, nimas u switchu v set_get_node... brt")
+	}
 }

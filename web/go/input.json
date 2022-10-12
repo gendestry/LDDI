@@ -1,0 +1,14 @@
+[
+    {
+        "tip": 0,
+        "node": "{\"tip\":0,\"scalar\":2,\"nextnode\":66}"
+    },
+    {
+        "tip": 1,
+        "node": "{\"tip\":0,\"color\":{\"R\":12,\"G\":55,\"B\":255},\"slice\":{\"start\":0,\"end\":144},\"nextnode\":88}"
+    },
+    {
+        "tip": 2,
+        "node": "{\"tip\":0,\"scalar\":2,\"nextnode\":66}"
+    }
+]
