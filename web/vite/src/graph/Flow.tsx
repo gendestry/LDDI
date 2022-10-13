@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  DragEvent,
+  Dispatch,
+  SetStateAction,
+} from "react";
 import * as Color from "color";
 import ReactFlow, {
   Node,
@@ -11,6 +19,8 @@ import ReactFlow, {
   Controls,
   Position,
   updateEdge,
+  ReactFlowInstance,
+  OnNodesChange,
 } from "reactflow";
 
 import "reactflow/dist/style.css";
@@ -33,6 +43,7 @@ import { ModNode, modNodeFactory } from "./nodes/maths/MathMod";
 import { GenScalarNode, genScalarNodeFactory } from "./nodes/GenerateScalar";
 import { rgbToHsl, rgbToHslNodeFactory } from "./nodes/color/rgbToHsl";
 import { hslToRgb, hslToRgbNodeFactory } from "./nodes/color/hslToRgb";
+import { NodeData } from "rete/types/core/data";
 
 const nodeTypes = {
   colorNode: ColorNode,
@@ -53,13 +64,31 @@ const nodeTypes = {
   hslToRgbNode: hslToRgb,
 };
 
+// let id = 0;
+// const getId = () => `dndnode_${id++}`;
+
 interface IProps {
   cb: (arg0: string) => void;
+  nodes: Node[];
+  setNodes: Dispatch<SetStateAction<Node<NodeData>[]>>;
+  onNodesChange: OnNodesChange;
+  setReactflowInstance: Dispatch<SetStateAction<ReactFlowInstance | null>>;
 }
-export const CustomNodeFlow = ({ cb }: IProps) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+export const CustomNodeFlow = ({
+  cb,
+  nodes,
+  onNodesChange,
+  setNodes,
+  setReactflowInstance,
+}: IProps) => {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [bgColor, setBgColor] = useState("#ffffff");
+
+  useEffect(() => {
+    console.log({ edges });
+    console.log({ nodes });
+    // serialize data and send to WASM
+  }, [edges]);
 
   useEffect(() => {
     const onChange = (event: any) => {
@@ -163,6 +192,7 @@ export const CustomNodeFlow = ({ cb }: IProps) => {
   const onEdgeUpdate = useCallback(
     (oldEdge: Edge, newConnection: Connection) => {
       edgeUpdateSuccessful.current = true;
+
       setEdges((els) => updateEdge(oldEdge, newConnection, els));
     },
     []
@@ -176,20 +206,22 @@ export const CustomNodeFlow = ({ cb }: IProps) => {
     edgeUpdateSuccessful.current = true;
   }, []);
 
-  const onConnect = useCallback(
-    (col: string, params: any) =>
-      setEdges((eds) =>
-        addEdge(
-          {
-            ...params,
-            animated: true,
-            style: { stroke: typeToCOl(col), strokeWidth: "4px" },
-          },
-          eds
-        )
-      ),
-    []
-  );
+  const onConnect = useCallback((col: string, params: any) => {
+    setEdges((eds: any) => {
+      console.log(eds);
+      console.log("SREDI TIPIZIRANE EDGE MONAAA");
+
+      return addEdge(
+        {
+          ...params,
+          animated: true,
+          style: { stroke: typeToCOl(col), strokeWidth: "4px" },
+        },
+        eds
+      );
+    });
+  }, []);
+
   return (
     <ReactFlow
       nodes={nodes}
@@ -205,9 +237,12 @@ export const CustomNodeFlow = ({ cb }: IProps) => {
       fitView
       attributionPosition="bottom-left"
       className="touchdevice-flow"
+      // dragable edges
       onEdgeUpdate={onEdgeUpdate}
       onEdgeUpdateStart={onEdgeUpdateStart}
       onEdgeUpdateEnd={onEdgeUpdateEnd}
+      // adding nodes on drag
+      onInit={setReactflowInstance}
     >
       <Controls />
     </ReactFlow>

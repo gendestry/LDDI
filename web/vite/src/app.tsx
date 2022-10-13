@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, DragEvent, useRef } from "react";
 import { wasmCompute } from "./wasm/compute";
 // import { SenderModule } from "./SenderModule";
 import { WasmComp } from "./components/wasm/WasmStatus";
@@ -8,6 +8,9 @@ import { CustomNodeFlow } from "./graph/Flow";
 
 import * as Color from "color";
 import { DragContainer } from "./DragContainer";
+import { ReactFlowInstance, useNodesState } from "reactflow";
+
+let wsGlobal: WebSocket | null = null;
 
 export function App() {
   const [wsInput, setWsInput] = useState("ws:192.168.57.71/ws");
@@ -16,7 +19,9 @@ export function App() {
   const [wsMsg, setWsMsg] = useState<
     "error" | "connected" | "connecting" | "died" | "closed"
   >("connecting");
-  const [wsInst, setWsInst] = useState<WebSocket | null>(null);
+  const [nodes, setNodes, onNodesChange] = useNodesState([]);
+  const [rfi, setRfi] = useState<ReactFlowInstance | null>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const compute = new wasmCompute();
@@ -37,28 +42,24 @@ export function App() {
         <WsInput
           loading={false}
           onSubmit={() => {
-            wsInst?.close();
-            const ws = new WebSocket(wsInput);
+            wsGlobal?.close();
+            wsGlobal = new WebSocket(wsInput);
             setLockedHost(wsInput);
             setWsMsg("connecting");
-            setWsInst(ws);
             console.log("connecting to", wsInput);
 
-            ws.onopen = () => {
+            wsGlobal.onopen = () => {
               setWsMsg("connected");
-              // setWsInst();
-              // const a = comp?.wave(0, 4) || [];
-              // const b = comp?.noise1D(0, 5, 144);
-              // console.log({ b });
-              // ws?.send(a.buffer);
+              wsGlobal?.send(new Uint8Array([0, 255, 255, 0]).buffer);
             };
-            ws.onclose = () => {
+            wsGlobal.onclose = () => {
               setWsMsg("closed");
+              wsGlobal = null;
             };
-            ws.onerror = () => {
+            wsGlobal.onerror = () => {
               setWsMsg("error");
             };
-            ws.onmessage = (msg) => {
+            wsGlobal.onmessage = (msg) => {
               console.log(msg);
             };
           }}
@@ -70,26 +71,37 @@ export function App() {
         <WSStatus wsStatus={wsMsg} host={lockedHost} />
       </div>
       <div className="flex h-full">
-        <div className="w-2/12 h-full bg-red-50">
-          <DragContainer />
-        </div>
         <div className="w-10/12">
           <div
+            ref={wrapperRef}
             style={{
-              width: "100%",
-              height: "70vh",
               border: "solid 1px black",
               margin: "auto",
+              width: "100%",
+              height: "70vh",
             }}
           >
             <CustomNodeFlow
+              nodes={nodes}
+              setReactflowInstance={setRfi}
+              onNodesChange={onNodesChange}
+              setNodes={setNodes}
               cb={(col: string) => {
                 const color = Color(col);
                 console.log([0, ...color.rgb().array()]);
-                // wsInst.send(new Uint8Array([0, ...color.rgb().array()]).buffer);
               }}
             />
           </div>
+        </div>
+        <div className="flex-1">
+          {rfi && (
+            <DragContainer
+              nodes={nodes}
+              setNodes={setNodes}
+              wrapperRef={wrapperRef}
+              reactFlowInstance={rfi}
+            />
+          )}
         </div>
       </div>
     </div>

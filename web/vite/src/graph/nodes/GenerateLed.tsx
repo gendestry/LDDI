@@ -37,12 +37,16 @@ export const GenLedNode = ({ isConnectable }: IProps) => {
   );
 };
 
-export function genLedNodeFactory(id: string): Node<any> {
+type pos = {
+  x: number;
+  y: number;
+};
+export function genLedNodeFactory(id: string, position?: pos): Node<any> {
   return {
     id: id,
     type: "genLedNode",
     data: {},
-    position: { x: 450, y: 500 },
+    position: position || { x: 450, y: 500 },
     targetPosition: Position.Right,
   };
 }
