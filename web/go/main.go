@@ -1,79 +1,157 @@
 package main
 
 import (
-	"crypto"
-	_ "crypto/sha512"
-	"encoding/hex"
+	"encoding/json"
 	"fmt"
-	"syscall/js"
+	"led-animator/structs"
+	"os"
+	"strings"
+	// "syscall/js"
 )
 
-type one struct {
-	one int
-}
+var leds []structs.Led
 
-type two struct {
-	two   int
-	three int
-}
+var nodes []structs.NodeHandler
+var starters []*structs.CreatorNode
+
+const MAX_CREATOR_NODES int64 = 100
+const MAX_NODES int32 = 200
+const NLEDS int32 = 144
 
 func main() {
-	done := make(chan struct{}, 0)
+	/* done := make(chan struct{}, 0)
 	js.Global().Set("wasmHash", js.FuncOf(hash))
 	js.Global().Set("wasmWave", js.FuncOf(wave))
 	fmt.Println("wasm done")
-	<-done
+	<-done */
+	/* var jsonStr string = `
+	[
+		{
+			"tip": 0,
+			"node": "{
+				"tip": 0,
+				"scalar" : 2,
+				"nextNode" : 66
+			}"
+		},
+		{
+			"tip": 0,
+			"node": "{
+				"tip": 0,
+				"scalar" : 2,
+				"nextNode" : 66
+			}"
+		},
+		{
+			"tip": 0,
+			"node": "{
+				"tip": 0,
+				"scalar" : 2,
+				"nextNode" : 66
+			}"
+		}
+	]` */
+
+	compute()
 
 }
 
-var glob int = 1
-
-func hash(this js.Value, args []js.Value) interface{} {
-	h := crypto.SHA512.New()
-	h.Write([]byte(args[0].String()))
-	fmt.Println(glob)
-	glob = glob + 1
-	return hex.EncodeToString(h.Sum(nil))
+func init() {
+	starters = make([]*structs.CreatorNode, MAX_CREATOR_NODES)
+	nodes = make([]structs.NodeHandler, MAX_NODES)
+	leds = make([]structs.Led, NLEDS)
 }
 
-//   wave(i: number, leds: number, waveSize: number, steps: number): LED[][]
-func wave(this js.Value, args []js.Value) interface{} {
-	i := args[0].Int()
-	numleds := args[1].Int()
+func compute() interface{} {
+	dat, _ := os.ReadFile("./input.json")
+	fmt.Println(string(dat))
 
-	fmt.Println("wave", i, numleds)
+	// init nodes
+	var err error
+	nodes, err = init_nodes(string(dat), nodes)
+	if err != nil { // block this iteration on error (it might not be computable)
+		return leds
+	}
+	fmt.Println(nodes)
 
-	// byte aray of 4 * leds * steps
-	// 4 bytes per LED
-	// 1 byte per color
-	// 1 byte per step
-	out := make([]interface{}, numleds*4)
-
-	// fill array with random data
-	for j := 0; j < len(out); j += 4 {
-		index := numleds*4*i + j
-
-		// if j%4 == 0 {
-		// 	out[j] = byte(index % 10)
-		// } else {
-		// 	out[j] = byte((index) % 255)
-		// }
-		// out[j-4] = index % numleds
-		// out[j-3] = 0
-		// out[j-2] = 0 //byte(index % 255)
-		// out[j-1] = 0 // byte(index * 17)
-
-		out[j] = index % 4
-
-		out[j+1] = index % 255
-		out[j+2] = index % 255
-		out[j+3] = index % 255
+	for i := 0; i < len(nodes); i++ {
+		fmt.Println(nodes[i])
 	}
 
-	// a := fmt.Sprintf("%g", out[:])
-	// a = strings.ReplaceAll(a, " ", "")
-	// // a = strings.ReplaceAll(a, "]", "")
-	// // fmt.Println("goout", a)
-	return out
-	// return string("012ÿ")
+	return leds
+}
+
+/* func compute(this js.Value, args []js.Value) interface{} {
+
+	return js.Null()
+} */
+
+func init_nodes(fullJson string, nodes []structs.NodeHandler) ([]structs.NodeHandler, error) {
+
+	// partial json parse (top json layer)
+	var jsons []structs.JSONNode
+
+	//fullJson = strings.ReplaceAll(fullJson, "\n", "")
+	fullJson = strings.Join(strings.Fields(fullJson), " ")
+
+	fmt.Println(fullJson)
+	json.Unmarshal([]byte(fullJson), &jsons)
+
+	fmt.Println("jnsons len: ", len(jsons))
+	// save nodes to \"actual\" data
+
+	fmt.Println("Entered")
+
+	for i := 0; i < len(jsons); i++ {
+		fmt.Println("i: ", i)
+		fmt.Println("with json node str: ", jsons[i].Node)
+
+		temp, err := set_get_node(jsons[i].Node, jsons[i].Tip)
+
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+
+		// if node has changed completely (type change)
+		if temp.GetType() != nodes[i].GetType() {
+			temp.InitCnter()
+			nodes[i] = temp
+		} else {
+			nodes[i].InitCnter()
+			nodes[i].
+		}
+
+		nodes[i].SetAgainst(temp)
+	}
+
+	//fmt.Println(nodes)
+
+	return nodes, nil
+}
+
+func set_get_node(json_string string, tip int16) (structs.NodeHandler, error) {
+	fmt.Printf("DEBUG:	created..")
+	var node_h structs.NodeHandler
+	switch tip {
+	case 0:
+		node := new(structs.ScalarCreatorNode)
+		fmt.Println("of_json_str: ", json_string)
+		json.Unmarshal([]byte(json_string), node)
+		fmt.Println("DEBUG:	scalar_node:", node.Tip, " ", node.Scalar, " nn", node.Nextnode)
+		node_h = node
+	case 1:
+		node := new(structs.ColorApplyerNode)
+		json.Unmarshal([]byte(json_string), node)
+		fmt.Println("DEBUG:	color_applyer_node: ", node.Color, " ", node.Color.R, " nn", node.Nextnode)
+		node_h = node
+	case 2:
+		node := new(structs.ColorCreatorNode)
+		json.Unmarshal([]byte(json_string), node)
+		fmt.Println("DEBUG:	color_creator_node: ", node.Tip, " (", node.R, ",", node.G, ",", node.B, ")", " nn", node.Nextnode)
+		node_h = node
+	default:
+		return nil, fmt.Errorf("Enga tipa, ki predstaula nek node, nimas u switchu v set_get_node... brt")
+	}
+	return node_h, nil
 }
