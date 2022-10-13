@@ -1,5 +1,4 @@
-import { JSX } from "preact";
-import { useState } from "preact/hooks";
+import { useState } from "react";
 
 interface IProps {
   loading: boolean;
@@ -18,7 +17,7 @@ export const WsInput = ({ loading, setVal, value, onSubmit }: IProps) => {
   return (
     <div className="flex font-medium p-2">
       <input
-        class="p-1 rounded"
+        className="p-1 rounded"
         placeholder={"ws://..."}
         value={value}
         onInput={handleInput}
@@ -27,7 +26,7 @@ export const WsInput = ({ loading, setVal, value, onSubmit }: IProps) => {
         onClick={() => {
           onSubmit();
         }}
-        class="p-1 px-4 bg-yellow-400 mx-3 rounded disabled:opacity-25"
+        className="p-1 px-4 bg-yellow-400 mx-3 rounded disabled:opacity-25"
         disabled={disabled}
       >
         {loading ? "loading..." : "connect"}

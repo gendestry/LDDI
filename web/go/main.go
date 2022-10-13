@@ -5,23 +5,34 @@ import (
 	_ "crypto/sha512"
 	"encoding/hex"
 	"fmt"
-	"led-animator/pkg/nodes"
 	"syscall/js"
 )
+
+type one struct {
+	one int
+}
+
+type two struct {
+	two   int
+	three int
+}
 
 func main() {
 	done := make(chan struct{}, 0)
 	js.Global().Set("wasmHash", js.FuncOf(hash))
 	js.Global().Set("wasmWave", js.FuncOf(wave))
-	js.Global().Set("wasmNoise", js.FuncOf(nodes.Noise1Dw))
 	fmt.Println("wasm done")
 	<-done
+
 }
+
+var glob int = 1
 
 func hash(this js.Value, args []js.Value) interface{} {
 	h := crypto.SHA512.New()
 	h.Write([]byte(args[0].String()))
-
+	fmt.Println(glob)
+	glob = glob + 1
 	return hex.EncodeToString(h.Sum(nil))
 }
 
@@ -53,7 +64,6 @@ func wave(this js.Value, args []js.Value) interface{} {
 		// out[j-1] = 0 // byte(index * 17)
 
 		out[j] = index % 4
-		const r, g, b = rgb2
 
 		out[j+1] = index % 255
 		out[j+2] = index % 255
