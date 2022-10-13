@@ -9,13 +9,14 @@ import (
 	// "syscall/js"
 )
 
-// jsonStructs FILE! :)
+var leds []structs.Led
 
-// dataStructs FILE! :)
+var nodes []structs.NodeHandler
+var starters []*structs.CreatorNode
 
-// nodeStructs FILE! :)))
-
-// this FILE! :)
+const MAX_CREATOR_NODES int64 = 100
+const MAX_NODES int32 = 200
+const NLEDS int32 = 144
 
 func main() {
 	/* done := make(chan struct{}, 0)
@@ -51,13 +52,33 @@ func main() {
 		}
 	]` */
 
-	//var tJsonStr string = `[{"tip":0,"node":{"tip":0,"scalar":2,"nextnode":66}}]`
+	compute()
 
+}
+
+func init() {
+	starters = make([]*structs.CreatorNode, MAX_CREATOR_NODES)
+	nodes = make([]structs.NodeHandler, MAX_NODES)
+	leds = make([]structs.Led, NLEDS)
+}
+
+func compute() interface{} {
 	dat, _ := os.ReadFile("./input.json")
 	fmt.Println(string(dat))
 
-	node_factory(string(dat))
+	// init nodes
+	var err error
+	nodes, err = init_nodes(string(dat), nodes)
+	if err != nil { // block this iteration on error (it might not be computable)
+		return leds
+	}
+	fmt.Println(nodes)
 
+	for i := 0; i < len(nodes); i++ {
+		fmt.Println(nodes[i])
+	}
+
+	return leds
 }
 
 /* func compute(this js.Value, args []js.Value) interface{} {
@@ -65,7 +86,7 @@ func main() {
 	return js.Null()
 } */
 
-func node_factory(fullJson string) ([]interface{}, error) {
+func init_nodes(fullJson string, nodes []structs.NodeHandler) ([]structs.NodeHandler, error) {
 
 	// partial json parse (top json layer)
 	var jsons []structs.JSONNode
@@ -79,45 +100,58 @@ func node_factory(fullJson string) ([]interface{}, error) {
 	fmt.Println("jnsons len: ", len(jsons))
 	// save nodes to \"actual\" data
 
-	// holds pointers to nodes: *struct.SomethingNode node[N]
-	nodes := make([]interface{}, len(jsons))
-
 	fmt.Println("Entered")
 
 	for i := 0; i < len(jsons); i++ {
 		fmt.Println("i: ", i)
 		fmt.Println("with json node str: ", jsons[i].Node)
-		var err error
-		nodes[i], err = set_get_node(jsons[i].Node, jsons[i].Tip)
+
+		temp, err := set_get_node(jsons[i].Node, jsons[i].Tip)
+
 		if err != nil {
 			fmt.Println(err)
 			return nil, err
 		}
+
+		// if node has changed completely (type change)
+		if temp.GetType() != nodes[i].GetType() {
+			temp.InitCnter()
+			nodes[i] = temp
+		} else {
+			nodes[i].InitCnter()
+			nodes[i].
+		}
+
+		nodes[i].SetAgainst(temp)
 	}
+
+	//fmt.Println(nodes)
 
 	return nodes, nil
 }
 
-func set_get_node(json_string string, tip int16) (interface{}, error) {
+func set_get_node(json_string string, tip int16) (structs.NodeHandler, error) {
 	fmt.Printf("DEBUG:	created..")
+	var node_h structs.NodeHandler
 	switch tip {
 	case 0:
 		node := new(structs.ScalarCreatorNode)
 		fmt.Println("of_json_str: ", json_string)
 		json.Unmarshal([]byte(json_string), node)
 		fmt.Println("DEBUG:	scalar_node:", node.Tip, " ", node.Scalar, " nn", node.Nextnode)
-		return node, nil
+		node_h = node
 	case 1:
 		node := new(structs.ColorApplyerNode)
 		json.Unmarshal([]byte(json_string), node)
 		fmt.Println("DEBUG:	color_applyer_node: ", node.Color, " ", node.Color.R, " nn", node.Nextnode)
-		return node, nil
+		node_h = node
 	case 2:
 		node := new(structs.ColorCreatorNode)
 		json.Unmarshal([]byte(json_string), node)
 		fmt.Println("DEBUG:	color_creator_node: ", node.Tip, " (", node.R, ",", node.G, ",", node.B, ")", " nn", node.Nextnode)
-		return node, nil
+		node_h = node
 	default:
 		return nil, fmt.Errorf("Enga tipa, ki predstaula nek node, nimas u switchu v set_get_node... brt")
 	}
+	return node_h, nil
 }

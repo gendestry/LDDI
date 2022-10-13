@@ -1,7 +1,7 @@
 [
     {
         "tip": 0,
-        "node": "{\"tip\":0,\"scalar\":2,\"nextnode\":66}"
+        "node": "{\"tip\":0,\"scalar\":2,\"gate_out\":0, gate\":66}"
     },
     {
         "tip": 1,

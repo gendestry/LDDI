@@ -10,3 +10,10 @@ type Slice struct {
 	Start int
 	End   int
 }
+
+type Led struct {
+	Index int8
+	R     int8
+	G     int8
+	B     int8
+}
