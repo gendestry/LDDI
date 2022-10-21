@@ -15,6 +15,11 @@ type ColorGate struct {
 	Color Color
 }
 
+type SliceGate struct {
+	Gate
+	Slice Slice
+}
+
 type GateHandler interface {
-	GetValue() interface{}
+	GetVdalue() interface{}
 }

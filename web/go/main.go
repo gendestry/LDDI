@@ -12,11 +12,10 @@ import (
 var leds []structs.Led
 
 var nodes []structs.NodeHandler
-var starters []*structs.CreatorNode
 
-const MAX_CREATOR_NODES int64 = 100
-const MAX_NODES int32 = 200
-const NLEDS int32 = 144
+const MAX_CREATOR_NODES uint64 = 100
+const MAX_NODES uint32 = 200
+const NLEDS uint32 = 144
 
 func main() {
 	/* done := make(chan struct{}, 0)
@@ -57,9 +56,9 @@ func main() {
 }
 
 func init() {
-	starters = make([]*structs.CreatorNode, MAX_CREATOR_NODES)
 	nodes = make([]structs.NodeHandler, MAX_NODES)
 	leds = make([]structs.Led, NLEDS)
+
 }
 
 func compute() interface{} {
@@ -117,9 +116,6 @@ func init_nodes(fullJson string, nodes []structs.NodeHandler) ([]structs.NodeHan
 		if temp.GetType() != nodes[i].GetType() {
 			temp.InitCnter()
 			nodes[i] = temp
-		} else {
-			nodes[i].InitCnter()
-			nodes[i].
 		}
 
 		nodes[i].SetAgainst(temp)
