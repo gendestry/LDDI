@@ -1,3 +1,20 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.touchdevice-flow .react-flow__handle {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background-color: #9f7aea;
+}
+
+.touchdevice-flow .react-flow__handle.connecting {
+  animation: bounce 1600ms infinite ease-out;
+}
+
+.react-flow_node .selected {
+  display: none !important;
+  border-color: orange;
+  background-color: #fff;
+}
